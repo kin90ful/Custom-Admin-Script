@@ -14,13 +14,13 @@ Intended for any Roblox game In need of admin commands
 ## Installation
 1. Download or clone this repository.
 2. Insert the script/module into your game:
-   - AdminRemotes (Folder) = ReplicatedStorage
-   - AdminSystem (Folder) = ServerScriptService
-   - AdminSystemClient (Folder) = StarterPlayerScripts
-   - AdminJoinSound = SoundService
+   - AdminRemotes (Folder) = `ReplicatedStorage`
+   - AdminSystem (Folder) = `ServerScriptService`
+   - AdminSystemClient (Folder) = `StarterPlayerScripts`
+   - AdminJoinSound = `SoundService`
 4. Connect any required dependencies or remotes
-   - AdminRemotes > FlyToggle
-   - AdminRemotes > AdminJoinNotice
+   - `AdminRemotes` > FlyToggle
+   - `AdminRemotes` > AdminJoinNotice
 
 ## Usage
 - In AdminHandler (Module Script) put UserID in "local Admins = {
