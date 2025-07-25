@@ -18,7 +18,7 @@ Inteded for any Roblox game In need of admin commands
    - AdminSystem (Folder) = ServerScriptService
    - AdminSystemClient (Folder) = StarterPlayerScripts
    - AdminJoinSound = SoundService
-4. Connect any required dependencies or remotes if applicable.
+4. Connect any required dependencies or remotes
    - AdminRemotes > FlyToggle
    - AdminRemotes > AdminJoinNotice
 
