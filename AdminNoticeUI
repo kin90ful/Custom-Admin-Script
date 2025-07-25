@@ -1,0 +1,26 @@
+-- ★ Crafted by Kin ★
+-- Admin Join Notification UI
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local StarterGui = game:GetService("StarterGui")
+local player = Players.LocalPlayer
+
+local Remote = ReplicatedStorage:WaitForChild("AdminRemotes"):WaitForChild("AdminJoinNotice")
+
+Remote.OnClientEvent:Connect(function(adminName)
+	local msg = "Welcome back, " .. adminName .. ". You have admin powers."
+
+	-- Play the admin join sound
+	local s = game:GetService("SoundService"):FindFirstChild("AdminJoinSound")
+	if s then
+		s:Play()
+	end
+
+	game:GetService("StarterGui"):SetCore("SendNotification", {
+		Title = "🛡 Administrator",
+		Text = msg,
+		Duration = 5
+	})
+end)
+
