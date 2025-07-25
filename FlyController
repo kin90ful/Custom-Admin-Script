@@ -1,0 +1,80 @@
+-- ★ Crafted by Kin ★
+-- Local Fly Handler (Client-Side)
+
+local UIS = game:GetService("UserInputService")
+local RS = game:GetService("RunService")
+local player = game.Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Remote = ReplicatedStorage:WaitForChild("AdminRemotes"):WaitForChild("FlyToggle")
+
+local flying = false
+local speed = 60
+local bodyGyro
+local bodyVel
+
+local function toggleFly(enable)
+	local char = player.Character or player.CharacterAdded:Wait()
+	local hrp = char:WaitForChild("HumanoidRootPart")
+	local humanoid = char:FindFirstChildOfClass("Humanoid")
+
+	if enable and not flying then
+		flying = true
+
+		if humanoid then
+			humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+			humanoid.AutoRotate = false
+		end
+
+		bodyGyro = Instance.new("BodyGyro")
+		bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+		bodyGyro.P = 10000
+		bodyGyro.CFrame = hrp.CFrame
+		bodyGyro.Parent = hrp
+
+		bodyVel = Instance.new("BodyVelocity")
+		bodyVel.Velocity = Vector3.zero
+		bodyVel.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+		bodyVel.Parent = hrp
+
+		RS:BindToRenderStep("FlyMovement", Enum.RenderPriority.Input.Value, function()
+			local cam = workspace.CurrentCamera
+			local moveVec = Vector3.zero
+
+			if UIS:IsKeyDown(Enum.KeyCode.W) then moveVec += cam.CFrame.LookVector end
+			if UIS:IsKeyDown(Enum.KeyCode.S) then moveVec -= cam.CFrame.LookVector end
+			if UIS:IsKeyDown(Enum.KeyCode.A) then moveVec -= cam.CFrame.RightVector end
+			if UIS:IsKeyDown(Enum.KeyCode.D) then moveVec += cam.CFrame.RightVector end
+			if UIS:IsKeyDown(Enum.KeyCode.Space) then moveVec += Vector3.yAxis end
+			if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then moveVec -= Vector3.yAxis end
+
+			if moveVec.Magnitude > 0 then
+				bodyVel.Velocity = moveVec.Unit * speed
+			else
+				bodyVel.Velocity = Vector3.zero
+			end
+
+			bodyGyro.CFrame = cam.CFrame
+		end)
+	else
+		flying = false
+		RS:UnbindFromRenderStep("FlyMovement")
+		if bodyGyro then bodyGyro:Destroy() end
+		if bodyVel then bodyVel:Destroy() end
+
+		if humanoid then
+			humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+			humanoid.AutoRotate = true
+		end
+	end
+end
+
+Remote.OnClientEvent:Connect(toggleFly)
+
+-- F key toggles fly on/off
+UIS.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if input.KeyCode == Enum.KeyCode.F then
+		toggleFly(not flying)
+	end
+end)
+
