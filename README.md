@@ -1,7 +1,7 @@
-# Advanced Admin Commands
+# Roblox Basic Admin Commands
 
 ## Overview
-Inteded for any Roblox game In need of admin commands
+Intended for any Roblox game In need of admin commands
 
 ## Features
 - Private command handler (no chat-based triggers)
