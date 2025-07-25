@@ -1,0 +1,209 @@
+-- ★ Crafted by Kin ★
+-- Ultimate Admin System – Custom
+
+local AdminHandler = {}
+
+--// Admin UserIds
+local Admins = {
+	[3007046864] = true,
+	-- Add more UserIds here
+}
+
+--// Services
+local Players = game:GetService("Players")
+local DataStoreService = game:GetService("DataStoreService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local BanStore = DataStoreService:GetDataStore("BannedUsers_Store")
+local FlyRemote = ReplicatedStorage:WaitForChild("AdminRemotes"):WaitForChild("FlyToggle")
+
+--// Chat Prefix
+local PREFIX = ";"
+
+--// Command Table
+local Commands = {}
+
+--// Register Command
+function AdminHandler.RegisterCommand(name, func, desc)
+	Commands[name:lower()] = {Func = func, Desc = desc or "No description."}
+end
+
+--// Utility
+local function findPlayer(name)
+	for _, plr in pairs(Players:GetPlayers()) do
+		if string.lower(plr.Name) == string.lower(name) then
+			return plr
+		end
+	end
+	return nil
+end
+
+--// Execute Chat Command
+function AdminHandler.ParseChat(player, message)
+	if not Admins[player.UserId] then return end
+	if not (message:lower():sub(1, #PREFIX) == PREFIX) then return end
+
+	local split = message:sub(#PREFIX + 1):split(" ")
+	local cmdName = split[1]:lower()
+	table.remove(split, 1)
+
+	local command = Commands[cmdName]
+	if command then
+		local success, err = pcall(function()
+			command.Func(player, unpack(split))
+		end)
+		if not success then warn("[Admin Error]:", err) end
+	end
+end
+
+--// Ban Check on Join
+Players.PlayerAdded:Connect(function(plr)
+	local isBanned = BanStore:GetAsync(tostring(plr.UserId))
+	if isBanned then
+		plr:Kick("You are permanently banned from this experience.")
+	end
+end)
+
+--// Command List --
+
+-- Kick
+AdminHandler.RegisterCommand("kick", function(sender, targetName)
+	local target = findPlayer(targetName)
+	if target then
+		target:Kick("Kicked by admin: " .. sender.Name)
+	end
+end, "Kicks a player.")
+
+-- Ban
+AdminHandler.RegisterCommand("ban", function(sender, targetName)
+	local target = findPlayer(targetName)
+	if target then
+		BanStore:SetAsync(tostring(target.UserId), true)
+		target:Kick("You were permanently banned by admin: " .. sender.Name)
+	end
+end, "Bans a player.")
+
+-- Unban
+AdminHandler.RegisterCommand("unban", function(sender, userId)
+	BanStore:RemoveAsync(tostring(userId))
+end, "Unbans a player by UserId.")
+
+-- Announce
+AdminHandler.RegisterCommand("announce", function(sender, ...)
+	local msg = table.concat({...}, " ")
+	for _, plr in pairs(Players:GetPlayers()) do
+		plr:Kick("[Server Notice]: " .. msg)
+	end
+end, "Kicks all with a message.")
+
+-- Fly
+AdminHandler.RegisterCommand("fly", function(sender)
+	if FlyRemote then
+		FlyRemote:FireClient(sender, true)
+	end
+end)
+
+AdminHandler.RegisterCommand("unfly", function(sender)
+	if FlyRemote then
+		FlyRemote:FireClient(sender, false)
+	end
+end)
+
+
+-- Noclip
+AdminHandler.RegisterCommand("noclip", function(sender)
+	if sender.Character then
+		for _, part in pairs(sender.Character:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.CanCollide = false
+			end
+		end
+	end
+end, "Turns off collisions.")
+
+-- Clip
+AdminHandler.RegisterCommand("clip", function(sender)
+	if sender.Character then
+		for _, part in pairs(sender.Character:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.CanCollide = true
+			end
+		end
+	end
+end, "Turns collisions back on.")
+
+-- Godmode
+AdminHandler.RegisterCommand("god", function(sender)
+	local humanoid = sender.Character and sender.Character:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		humanoid.Name = "ImmortalHumanoid"
+		humanoid.MaxHealth = math.huge
+		humanoid.Health = math.huge
+	end
+end, "Enables Godmode.")
+
+-- Ungod
+AdminHandler.RegisterCommand("ungod", function(sender)
+	local humanoid = sender.Character and sender.Character:FindFirstChild("ImmortalHumanoid")
+	if humanoid then
+		humanoid.MaxHealth = 100
+		humanoid.Health = 100
+		humanoid.Name = "Humanoid"
+	end
+end, "Disables Godmode.")
+
+-- Bring
+AdminHandler.RegisterCommand("bring", function(sender, targetName)
+	local target = findPlayer(targetName)
+	if sender.Character and target and target.Character then
+		target.Character:MoveTo(sender.Character:GetPrimaryPartCFrame().Position + Vector3.new(2,0,0))
+	end
+end, "Brings a player to you.")
+
+-- Goto
+AdminHandler.RegisterCommand("goto", function(sender, targetName)
+	local target = findPlayer(targetName)
+	if target and target.Character and sender.Character then
+		sender.Character:MoveTo(target.Character:GetPrimaryPartCFrame().Position + Vector3.new(2,0,0))
+	end
+end, "Teleport to a player.")
+
+-- Heal
+AdminHandler.RegisterCommand("heal", function(sender, targetName)
+	local target = findPlayer(targetName or sender.Name)
+	if target and target.Character then
+		local hum = target.Character:FindFirstChildOfClass("Humanoid")
+		if hum then hum.Health = hum.MaxHealth end
+	end
+end, "Heal a player.")
+
+-- Kill
+AdminHandler.RegisterCommand("kill", function(sender, targetName)
+	local target = findPlayer(targetName)
+	if target and target.Character then
+		local hum = target.Character:FindFirstChildOfClass("Humanoid")
+		if hum then hum.Health = 0 end
+	end
+end, "Kills a player.")
+
+--// Hook into player chats
+local JoinNoticeRemote = ReplicatedStorage:WaitForChild("AdminRemotes"):WaitForChild("AdminJoinNotice")
+
+Players.PlayerAdded:Connect(function(plr)
+	local isBanned = BanStore:GetAsync(tostring(plr.UserId))
+	if isBanned then
+		plr:Kick("You are permanently banned from this experience.")
+	else
+		-- Fire admin join notice if they're in the list
+		if Admins[plr.UserId] then
+			JoinNoticeRemote:FireClient(plr, plr.Name)
+		end
+	end
+
+	-- Hook chat commands
+	plr.Chatted:Connect(function(msg)
+		AdminHandler.ParseChat(plr, msg)
+	end)
+end)
+
+return AdminHandler
+
